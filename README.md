@@ -1,2 +1,2 @@
-# sshuaichai-SPARK-UNet
-sshuaichai/SPARK-UNet
+# SPARK-UNet
+SPARK-UNet
