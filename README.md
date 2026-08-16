@@ -1,6 +1,6 @@
 # ✨ SPARK-UNet
 
-**Sparse Prior-guided Attention with Region-aware Key-token sampling** for efficient 3D medical image segmentation.
+**Sparse Prior-guided Attention with Region-aware Key-token sampling** for 3D medical image segmentation.
 
 | Variant | Trainer (`-tr`) | Backbone | Legend |
 |:-------:|:----------------|:---------|:-------|
