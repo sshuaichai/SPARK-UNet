@@ -1,0 +1,5 @@
+Model,Params_M,FLOPs_G_acdc,Latency_s_acdc,Mem_Train_GB_acdc,Mem_Infer_patch_GB_acdc,FLOPs_G_brats,Latency_s_brats,Mem_Train_GB_brats,Mem_Infer_patch_GB_brats,FLOPs_G_synapse,Latency_s_synapse,Mem_Train_GB_synapse,Mem_Infer_patch_GB_synapse
+Ours-P,34.80,226.7,0.062,12.4,0.8,575.1,0.377,9.4,1.7,664.7,13.143,13.0,2.6
+Ours-L,34.95,243.1,0.120,13.7,0.9,634.1,0.418,10.8,2.0,732.5,10.260,12.3,2.0
+Ours-R,111.06,440.4,0.071,15.0,1.2,925.5,0.487,11.5,2.1,1089.4,14.239,13.6,2.6
+nnU-Net,31.20,203.4,0.111,6.2,0.6,538.1,0.340,6.2,1.7,619.6,5.883,7.3,2.5
