@@ -29,8 +29,10 @@ SPARK-UNet targets **3D medical segmentation**: on an nnU-Net-style dense U-Net 
 **Three-step pipeline (Fig. 1b SPARKUnit):**
 
 1. **Orient (E0)** — AxialDW3D for axis-aligned local orientation; no Read/Win on the shallowest stage.
-2. **Prior + Top-K (E1–E4)** — PriorHead predicts foreground prior; TAN picks Top-K anchors along axial / coronal / sagittal views.
-3. **Read ∥ Win + BA** — parallel branches: WinMHSA3D for window self-attention; Read assembles KV for each anchor from **history features, global pooling, and current local** sources; BA softmaxes over **source dimension \(S\)** and writes back at anchors (**not** anchor×anchor \(K^2\) full attention). Decoder uses **AG (attention gates)** on skips.
+2. **Prior + Top-K (E1–E4)** — PriorHead + energy map → P_eff; TAN picks Top-K on oriented **h** → refined **base**.
+3. **BA ∥ Win (E1–E4)** — **BA (Read)** gathers multi-source KV at anchors only, softmax over source dim \(S\), writes back to **base** (BaOnBase); **WinMHSA3D** applies dual-shift window MHSA on **h** and adds to the BA output via a gate (**parallel** to BA, not upstream of it).
+
+Decoder uses **AG (attention gates)** on skips.
 
 **Variants:** **Ours-P** (PlainConv, primary reporting) · **Ours-L** (LightRes) · **Ours-R** (ResEnc-L, best ACDC Mean Dice). Ablation and baseline comparisons are in the manuscript **Tables 5a–5c**.
 
@@ -45,11 +47,11 @@ Default depth **pool=P5 → encoder stages=S6** (6 encoder stages E0–E5, 5 poo
 | Paper Stage | Code | Modules | Notes |
 |:-----------:|:----:|:--------|:------|
 | 1 | **E0** | Orient-only | AxialDW3D; no Prior / Read / Win |
-| 2–5 | **E1–E4** | Full SPARKUnit | PriorHead → TAN Top-K → Read ∥ WinMHSA3D → BA write-back |
+| 2–5 | **E1–E4** | Full SPARKUnit | Orient **h** → PriorHead → TAN Top-K → **BA write-back(base)** ∥ **WinMHSA3D(h)** |
 | 6 | **E5** | CNN + PriorHead | Deepest CNN + prior head; **no Bottleneck BA** |
 | Dec | Decoder | SPARKDecoder + **AG** | Gated skip fusion |
 
-**Module glossary:** **PriorHead** voxel prior; **TAN** tri-view Top-K; **WinMHSA3D** window MHSA (dual-shift); **BA** anchor-selective multi-source context injection; **AG** decoder attention gate.
+**Module glossary:** **PriorHead** voxel prior (inside E1–E4 units; separate E5 head for training loss); **TAN** tri-view Top-K; **BA** anchor multi-source KV + scatter write-back; **WinMHSA3D** gated in parallel on **h**; **AG** decoder attention gate.
 
 <p align="center">
   <img src="assets/fig01_architecture.png" alt="Fig 1" width="920" />
