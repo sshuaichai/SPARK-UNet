@@ -11,7 +11,7 @@ Figures synced from `D:\zhuomian\final-fig\` (**excluding** `three_datasets/` au
 |:-------:|:----------------|:---------|:-------|
 | **P** | `nnUNetTrainerSPARKUNetP` | PlainConv | **Ours-P** (primary cross-dataset) |
 | **L** | `nnUNetTrainerSPARKUNetL` | LightRes | **Ours-L** |
-| **R** | `nnUNetTrainerSPARKUNetR` | ResEnc-L | **Ours-R** (ACDC emphasis) |
+| **R** | `nnUNetTrainerSPARKUNetR` | ResEnc | **Ours-R** (ACDC emphasis) |
 
 | Loss | Epochs |
 |:-----|:-------|
