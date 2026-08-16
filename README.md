@@ -1,10 +1,16 @@
 # ✨ SPARK-UNet
 
-**Sparse Prior-guided Attention with Region-aware Key-token sampling** for 3D medical image segmentation.
+**Sparse Prior-guided Attention with Region-aware Key-token sampling** for 3D medical image segmentation — budgeted, anchor-selective multi-source contextual interaction on a dense CNN backbone.
+
+> 💡 **In one line:** prior picks **where to read**, Top-K caps **how many**, BA **writes back** cross-source context at anchors — unselected voxels stay identical.
+
+[中文 README](README.md)
+
+SPARK-UNet targets **3D medical segmentation**: on an nnU-Net-style dense U-Net trunk it injects long-range context via **prior-guided sparse reading (where-to-read)** and **budgeted anchor write-back (BA)**, instead of global self-attention over the full grid. Unselected voxels keep the CNN base unchanged, preserving dense outputs and sliding-window inference.
 
 | Variant | Trainer (`-tr`) | Backbone | Legend |
 |:-------:|:----------------|:---------|:-------|
-| **P** | `nnUNetTrainerSPARKUNetP` | PlainConv | **Ours-P** (primary cross-dataset) |
+| **P** ⭐ | `nnUNetTrainerSPARKUNetP` | PlainConv | **Ours-P** (primary cross-dataset) |
 | **L** | `nnUNetTrainerSPARKUNetL` | LightRes | **Ours-L** |
 | **R** | `nnUNetTrainerSPARKUNetR` | ResEnc | **Ours-R** (ACDC emphasis) |
 
@@ -12,13 +18,38 @@
 |:-----|:-------|
 | `L_seg + 0.05·L_prior + 0.02·PriorAux` | ACDC **200**; BraTS / Synapse **1000** (250 it/ep, SGD `1e-2`) |
 
-**Paper ↔ code:** Reported checkpoints live under `nnUNetTrainerGLRPlainConv` / `GLRLightResConv` / `GLRResEncConv`. `nnUNetTrainerSPARKUNetP/L/R` is the clean product entry (`network.py`, `config.py`). Set **200** epochs for ACDC.
+⚠️ Set **200** epochs for ACDC.
 
 ---
 
-## 1. Architecture (Fig. 1)
+## 📖 Overview
 
-Default **P5→S6**: **E0** Orient-only · **E1–E4** Read∥Win + BaOnBase · **E5** CNN + PriorHead (**no Bot**) · decoder **AG**.
+**Motivation.** In brain, cardiac, and abdominal multi-organ tasks, foreground often occupies a small fraction of the volume, yet CNN receptive fields struggle with cross-region dependencies while global Transformers incur quadratic cost. SPARK-UNet **first decides where to look**, then aggregates **multi-source context only at Top-K anchors** under a fixed budget.
+
+**Three-step pipeline (Fig. 1b SPARKUnit):**
+
+1. **Orient (E0)** — AxialDW3D for axis-aligned local orientation; no Read/Win on the shallowest stage.
+2. **Prior + Top-K (E1–E4)** — PriorHead predicts foreground prior; TAN picks Top-K anchors along axial / coronal / sagittal views.
+3. **Read ∥ Win + BA** — parallel branches: WinMHSA3D for window self-attention; Read assembles KV for each anchor from **history features, global pooling, and current local** sources; BA softmaxes over **source dimension \(S\)** and writes back at anchors (**not** anchor×anchor \(K^2\) full attention). Decoder uses **AG (attention gates)** on skips.
+
+**Variants:** **Ours-P** (PlainConv, primary reporting) · **Ours-L** (LightRes) · **Ours-R** (ResEnc-L, best ACDC Mean Dice). Ablation and baseline comparisons are in the manuscript **Tables 5a–5c**.
+
+**This package:** `network.py` · `config.py` · `build_sparkunet` (`__init__.py`); use the `-tr` flags above for P / L / R training and inference.
+
+---
+
+## 🏗️ 1. Architecture (Fig. 1)
+
+Default depth **pool=P5 → encoder stages=S6** (6 encoder stages E0–E5, 5 poolings). Paper **Stages 1–6** map to code **E0–E5**:
+
+| Paper Stage | Code | Modules | Notes |
+|:-----------:|:----:|:--------|:------|
+| 1 | **E0** | Orient-only | AxialDW3D; no Prior / Read / Win |
+| 2–5 | **E1–E4** | Full SPARKUnit | PriorHead → TAN Top-K → Read ∥ WinMHSA3D → BA write-back |
+| 6 | **E5** | CNN + PriorHead | Deepest CNN + prior head; **no Bottleneck BA** |
+| Dec | Decoder | SPARKDecoder + **AG** | Gated skip fusion |
+
+**Module glossary:** **PriorHead** voxel prior; **TAN** tri-view Top-K; **WinMHSA3D** window MHSA (dual-shift); **BA** anchor-selective multi-source context injection; **AG** decoder attention gate.
 
 <p align="center">
   <img src="assets/fig01_architecture.png" alt="Fig 1" width="920" />
@@ -28,11 +59,17 @@ Default **P5→S6**: **E0** Orient-only · **E1–E4** Read∥Win + BaOnBase · 
 <strong>Fig. 1</strong> SPARK-UNet overview. (a) Full framework; (b) SPARKUnit; (c) AxialDW3D; (d) PriorHead; (e) TAN; (f) BA; (g) WinMHSA3D; (h) Decoder with AG.
 </sub></p>
 
-See [arch_flow.md](arch_flow.md) for stage-wise flow (paper Stage 1–6 ↔ code E0–E5).
-
 ---
 
-## 2. Setup, training & inference
+## 🚀 2. Setup, training & inference
+
+**Requirements:** nnU-Net v2 runtime (`pip install -e .`), CUDA GPU; datasets in standard nnU-Net folders.
+
+| Path | Role |
+|:-----|:-----|
+| `network.py` | `SPARKUNet` / `SPARKUnit` / `build_sparkunet` |
+| `config.py` | Default network topology and training hyperparameters |
+| `assets/` | Paper Figs 1–8 and table CSVs |
 
 ```bash
 pip install -e .
@@ -41,27 +78,40 @@ export nnUNet_preprocessed=/path/to/nnUNet_preprocessed
 export nnUNet_results=/path/to/nnUNet_results
 
 nnUNetv2_plan_and_preprocess -d DATASET_ID --verify_dataset_integrity
-nnUNetv2_train DATASET_ID 3d_fullres FOLD -tr nnUNetTrainerSPARKUNetP
+nnUNetv2_train DATASET_ID 3d_fullres FOLD -tr nnUNetTrainerSPARKUNetP   # or L / R
 nnUNetv2_predict -i PATH/imagesTs -o PATH/pred -d DATASET_ID -c 3d_fullres -f all \
-  -tr nnUNetTrainerSPARKUNetP -chk checkpoint_final.pth
+  -tr nnUNetTrainerSPARKUNetP -chk checkpoint_final.pth   # match training variant (P / L / R)
 ```
+
+Loss: **`L_seg + 0.05·L_prior + 0.02·PriorAux`** (SGD `lr=1e-2`, 250 train / 50 val iters per epoch). BraTS / Synapse **1000 epochs**; ACDC **200 epochs**.
 
 ---
 
-## 3. Paper results (Figs 2–8 · Tables 2–6)
+## 📊 3. Experimental setup & paper results (Figs 2–8 · Tables 2–6)
 
-Held-out test: **ACDC** (40) · **BraTS2023-GLI** (251) · **Synapse** (12).  
-CSV sources: [`table_summary.csv`](assets/table_summary.csv) · [`table6_efficiency.csv`](assets/table6_efficiency.csv) · [`complexity_paper_resource.csv`](assets/complexity_paper_resource.csv) · [`peak_mem_table.csv`](assets/peak_mem_table.csv)
+**Evaluation protocol (manuscript §4.2):** one **full training run** per model to the prescribed epoch count; endpoint Mean Dice / HD95 on **fixed held-out test splits** — **no** validation checkpoint cherry-picking. FLOPs / Latency / Mem measured on RTX 4090 per **dataset plans patch** and **imagesTs sliding-window whole-case** inference (fp32, no TTA).
+
+**Held-out test sizes:**
+
+| Dataset | Modality / task | Held-out test | Split (paper) |
+|:--------|:----------------|:--------------|:--------------|
+| 🫀 **ACDC** | Short-axis cardiac MRI · RV / MYO / LV | **40 volumes** | 100 patients × ED/ES → 200 volumes; patient-level **70/10/20** → **40 test volumes** (~20 patients) |
+| 🧠 **BraTS2023-GLI** | Multimodal brain MRI · WT / TC / ET | **251 cases** | 1251 labeled cases; patient-level **7:1:2** → 875 / 125 / **251** |
+| **Synapse (BTCV)** | Portal-phase **abdominal multi-organ CT** · **8 organs**<br>aorta · gallbladder · L/R kidney · liver · pancreas · spleen · stomach | **12 cases** | 30 BTCV cases total; TransUNet split **18 train / 12 held-out test** |
+
+**Headline results:** **Ours-P** vs Plain nnU-Net Mean Dice **+0.01 / +0.37 / +1.30** (ACDC / BraTS / Synapse) at **~+11% Params** and **+7–11% FLOPs** (Table B). BraTS gains concentrate on **TC & ET**; Synapse improves **small organs (e.g. gallbladder)** and HD95; **Ours-R** reaches **91.98** on ACDC. Figs 7–8 diagnose prior / Top-K selection on BraTS held-out (n=251).
+
+📎 CSV sources: [`table_summary.csv`](assets/table_summary.csv) (Table A) · [`table6_efficiency.csv`](assets/table6_efficiency.csv) (Table B)
 
 ### 3.0 Performance tables (overview)
 
-#### Table A · Mean Dice (%↑) on three benchmarks
+#### 📋 Table A · Mean Dice (%↑) on three benchmarks
 
 Matches the manuscript summary; `—` = not evaluated. **Ours-P/L/R** and **nnU-Net** in bold.
 
 | Model | Params (M) | ACDC | BraTS | Synapse |
 |:------|----------:|-----:|------:|--------:|
-| **Ours-P** | 34.80 | 91.18 | **91.73** | **85.73** |
+| **Ours-P** ⭐ | 34.80 | 91.18 | **91.73** | **85.73** |
 | **Ours-L** | 34.95 | 91.45 | 91.22 | 85.71 |
 | **Ours-R** | 111.06 | **91.98** | 91.50 | 85.60 |
 | **nnU-Net** | 31.20 | 91.17 | 91.36 | 84.43 |
@@ -77,9 +127,9 @@ Matches the manuscript summary; `—` = not evaluated. **Ours-P/L/R** and **nnU-
 | LightUNETR-L | 3.93 | — | 90.36 | — |
 | SlimUNETRV2 | 23.61 | — | 90.29 | — |
 
-#### Table B · Efficiency & memory (Table 6 excerpt, per dataset)
+#### ⚙️ Table B · FLOPs / Latency / memory (Table 6 excerpt, per dataset)
 
-RTX 4090. **FLOPs (G)** = plans-patch forward on each benchmark; **Latency (s)** = imagesTs sliding-window mean per case (fp32, no TTA); **Mem T / I (GB)** = train peak (AMP+backward, PyTorch allocated) / infer-patch peak (AMP forward, same patch). Matches Table 6 — **not** VRAM/SMI columns. Full 15-method Table 6: [`complexity_paper_resource.csv`](assets/complexity_paper_resource.csv) · [`peak_mem_table.csv`](assets/peak_mem_table.csv) (`train_peak_mem_GB` · `infer_patch_peak_mem_GB`).
+RTX 4090. **FLOPs (G)** = plans-patch forward; **Latency (s)** = imagesTs sliding-window mean (fp32, no TTA); **Mem T / I (GB)** = train peak / infer-patch peak (PyTorch allocated). Excerpt for **Ours-P/L/R** and **nnU-Net**; full 15-method Table 6 is in the manuscript.
 
 | Model | Params (M) | ACDC FLOPs | ACDC Lat | ACDC Mem T/I | BraTS FLOPs | BraTS Lat | BraTS Mem T/I | Synapse FLOPs | Synapse Lat | Synapse Mem T/I |
 |:------|----------:|-----------:|---------:|-------------:|------------:|----------:|--------------:|--------------:|------------:|----------------:|
@@ -88,81 +138,74 @@ RTX 4090. **FLOPs (G)** = plans-patch forward on each benchmark; **Latency (s)**
 | **Ours-R** | 111.06 | 440.4 | 0.071 | 15.0 / 1.2 | 925.5 | 0.487 | 11.5 / 2.1 | 1089.4 | 14.239 | 13.6 / 2.6 |
 | **nnU-Net** | 31.20 | 203.4 | 0.111 | 6.2 / 0.6 | 538.1 | 0.340 | 6.2 / 1.7 | 619.6 | 5.883 | 7.3 / 2.5 |
 
-Ours-P vs nnU-Net: **Params ~+11%**; FLOPs **+11.4% (ACDC) / +6.9% (BraTS) / +7.3% (Synapse)**; Latency varies by dataset and patch scale (ACDC **0.062 vs 0.111 s**; BraTS **0.377 vs 0.340 s**; Synapse **13.143 vs 5.883 s**).
+Ours-P vs nnU-Net: **Params ~+11%**; FLOPs **+11.4% (ACDC) / +6.9% (BraTS) / +7.3% (Synapse)**; Latency varies by dataset and patch scale.
 
-#### Table C · Per-dataset highlights (Tables 2–4)
+#### 🎯 Table C · Per-dataset highlights (Tables 2–4)
 
 | Dataset | Table | Ours-P vs nnU-Net | Main takeaway |
 |:--------|:------|:------------------|:--------------|
-| BraTS | 2 | **91.73** vs 91.36 | TC **+0.77**, ET **+0.41**; WT ~flat |
-| ACDC | 3 | **91.18** vs 91.17 | Ours-P ≈ nnU-Net; **Ours-R 91.98** |
-| Synapse | 4 | **85.73** vs 84.43 | Gallbladder **72.47** vs 66.09 |
+| 🧠 BraTS | 2 | **91.73** vs 91.36 | TC **+0.77**, ET **+0.41**; WT ~flat |
+| 🫀 ACDC | 3 | **91.18** vs 91.17 | Ours-P ≈ nnU-Net; **Ours-R 91.98** |
+| Synapse (BTCV) | 4 | **85.73** vs 84.43 | 8 abdominal organs; gallbladder **72.47** vs 66.09 |
 
 ---
 
-### 3.1 Fig. 2 · Dice–HD95 Pareto
+### 3.1 📈 Fig. 2 · Dice–HD95 Pareto
+
+Fig. 2 jointly plots Mean DSC and Mean HD95; dashed Pareto fronts summarize accuracy–boundary trade-offs across method clusters.
 
 <p align="center"><img src="assets/fig02_dice_hd95_pareto.png" alt="Fig 2" width="920" /></p>
 
-<sub><strong>Fig. 2</strong> Mean DSC (↑) vs Mean HD95 (↓, mm) on three benchmarks; dashed Pareto fronts; near-front methods only. Left ACDC · middle BraTS · right Synapse.</sub>
+<sub><strong>Fig. 2</strong> Mean DSC (↑) vs Mean HD95 (↓, mm); dashed Pareto fronts. Left ACDC · middle BraTS · right Synapse.</sub>
 
-### 3.2 Fig. 3 · Per-region Dice / HD95
+### 3.2 📈 Fig. 3 · Per-region Dice / HD95
 
 <p align="center"><img src="assets/fig03_region_dice_hd95.png" alt="Fig 3" width="920" /></p>
 
-<sub><strong>Fig. 3</strong> (a) region DSC; (b) region HD95. Labels vary by dataset (RV/MYO/LV · WT/TC/ET · 8 organs).</sub>
+<sub><strong>Fig. 3</strong> (a) region DSC; (b) region HD95. ACDC: RV/MYO/LV; BraTS: WT/TC/ET; Synapse (BTCV): 8 abdominal organs.</sub>
 
-### 3.3 Fig. 4 · Qualitative segmentation
+### 3.3 🖼️ Fig. 4 · Qualitative segmentation
 
 <p align="center"><img src="assets/fig04_qualitative.png" alt="Fig 4" width="920" /></p>
 
-<sub><strong>Fig. 4</strong> Representative outputs: Ours-P on BraTS/Synapse, Ours-R on ACDC; GT vs prediction overlays.</sub>
+<sub><strong>Fig. 4</strong> Ours-P on BraTS/Synapse, Ours-R on ACDC; GT vs prediction overlays.</sub>
 
-### 3.4 Fig. 5 · Efficiency–accuracy (FLOPs–DSC)
+### 3.4 ⚖️ Fig. 5 · FLOPs–DSC (Table 6)
 
 <p align="center"><img src="assets/fig05_efficiency_flops_dsc.png" alt="Fig 5" width="920" /></p>
 
-<p align="center"><sub><strong>Fig. 5</strong> FLOPs–DSC trade-off (★ Ours-P/L/R). Three panels left→right <strong>ACDC / BraTS / Synapse</strong>; x-axis = FLOPs (G, that dataset’s plans patch); y-axis = Mean DSC (%); labels show Params (M) and that dataset’s Latency (s). See <strong>Table B</strong>.</sub></p>
+<p align="center"><sub><strong>Fig. 5</strong> FLOPs–DSC trade-off (★ Ours-P/L/R). Three panels: ACDC / BraTS / Synapse. See <strong>Table B</strong>.</sub></p>
 
-### 3.5 Fig. 6 · Case-level Mean Dice
+### 3.5 📦 Fig. 6 · Case-level Mean Dice
 
 <p align="center"><img src="assets/fig06_case_dice_distribution.png" alt="Fig 6" width="920" /></p>
 
-<sub><strong>Fig. 6</strong> Per-case Mean Dice (strip + box). Methods sorted by test-set mean; box midline = median; <strong>top labels = same Mean Dice as Tables 2–4</strong>.</sub>
+<sub><strong>Fig. 6</strong> Per-case Mean Dice (strip + box). Top labels = same Mean Dice as Tables 2–4.</sub>
 
-### 3.6 Fig. 7 · Prior / Top-K visualization (BraTS)
+### 3.6 🎯 Fig. 7 · Prior / Top-K visualization (BraTS)
 
-<p align="center">
-  <img src="assets/fig07_prior_selection_viz.png" alt="Fig 7" width="920" />
-</p>
+Fig. 7 is a **where-to-read** diagnostic: one BraTS case comparing Lock-Pr / PriorOnly / Random etc.; red boxes mark tri-view Top-K anchors.
 
-<p align="center"><sub><strong>Fig. 7</strong> Single-case where-to-read on BraTS T1ce; Stages 2–5; TANOnly / Soft-Pr / Lock-Pr / PriorOnly / Random; axial / coronal / sagittal Top-K (red boxes).</sub></p>
+<p align="center"><img src="assets/fig07_prior_selection_viz.png" alt="Fig 7" width="920" /></p>
 
-### 3.7 Fig. 8 · Full held-out selection quality (BraTS)
+<p align="center"><sub><strong>Fig. 7</strong> Single-case where-to-read; Stages 2–5; Lock-Pr / PriorOnly / Random / …; Top-K (red boxes).</sub></p>
 
-<p align="center">
-  <img src="assets/fig08_selection_quality.png" alt="Fig 8" width="920" />
-</p>
+### 3.7 🔬 Fig. 8 · Full held-out selection quality (BraTS)
 
-<p align="center"><sub><strong>Fig. 8</strong> Selection quality on full held-out set (n=251; Stages 2–5): Precision@K, Recall@K, Enrichment, BoundaryHit@K by WT/TC/ET; mean ± 95% CI.</sub></p>
+Fig. 8 aggregates Precision@K, Recall@K, Enrichment, and BoundaryHit@K over **251 held-out cases** (Stages 2–5; mean ± 95% CI), quantifying whether priors land on foreground / boundaries.
 
-Ablation Tables 5a–5c are in the manuscript only.
+<p align="center"><img src="assets/fig08_selection_quality.png" alt="Fig 8" width="920" /></p>
+
+<p align="center"><sub><strong>Fig. 8</strong> Selection quality (n=251; Stages 2–5): Precision@K, Recall@K, Enrichment, BoundaryHit@K; mean ± 95% CI.</sub></p>
+
+🧪 Ablation Tables 5a–5c are in the manuscript only.
 
 ---
 
-## 4. Sync & verify assets
+## 📜 4. License
 
-```bash
-python nnunetv2/training/network/sparkunet/sync_paper_assets.py
-python nnunetv2/training/network/sparkunet/verify_assets.py
-```
+SPARK-UNet module code is released under the **[Apache License 2.0](LICENSE.txt)**.
 
-Refreshes **8 manuscript figures + 4 CSV tables** from `D:\zhuomian\final-fig\`.
-
-```text
-sparkunet/
-  README.md / README_EN.md / arch_flow.md
-  sync_paper_assets.py / verify_assets.py
-  assets/fig01…fig08 + table_*.csv
-nnUNetTrainer/nnUNetTrainerSPARKUNet.py
-```
+- Implementation in this `sparkunet/` directory: see [`LICENSE.txt`](LICENSE.txt)
+- Training/inference builds on [nnU-Net](https://github.com/MIC-DKFZ/nnUNet) and its license
+- Public benchmarks (ACDC, BraTS2023-GLI, Synapse/BTCV) remain subject to their original data-use terms
