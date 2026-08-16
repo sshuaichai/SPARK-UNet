@@ -2,8 +2,6 @@
 
 **Sparse Prior-guided Attention with Region-aware Key-token sampling** for efficient 3D medical image segmentation.
 
-[中文 README](README.md) · [Architecture flow](arch_flow.md) · [Asset sync](sync_paper_assets.py)
-
 | Variant | Trainer (`-tr`) | Backbone | Legend |
 |:-------:|:----------------|:---------|:-------|
 | **P** | `nnUNetTrainerSPARKUNetP` | PlainConv | **Ours-P** (primary cross-dataset) |
