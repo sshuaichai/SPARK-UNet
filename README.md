@@ -12,7 +12,6 @@
 >
 > **This page is a paper preview README.** The **implementation**, **training/inference configs**, and **full architecture documentation** matching the accepted manuscript will be **released in this repository** under `nnunetv2/training/network/sparkunet/` **upon formal paper acceptance**.
 >
-> Before acceptance, this directory provides a **method overview** only. Benchmark metrics, full figures, and reproduction details are in [README_EN.full.md](README_EN.full.md) (internal sync with the manuscript).
 
 ---
 
@@ -28,7 +27,7 @@ SPARK-UNet injects long-range context on an nnU-Net-style **dense U-Net** trunk 
 | 2 | **Prior + TAN** | PriorHead → P_eff; Top-K on **h** → **base** |
 | 3 | **BA ∥ Win** | BA writes to **base** at anchors (history / global / partial; softmax over source dim \(S\)); WinMHSA3D on **h** adds in parallel via a gate |
 
-Default **pool=P5 → stages=S6** (E0–E5); decoder with **AG** attention gates. Variants: **Ours-P** (PlainConv, primary) · **Ours-L** (LightRes) · **Ours-R** (ResEnc-L).
+Default **pool=P5 → stages=S6** (E0–E5); decoder with **AG** attention gates. Variants: **Ours-P** (PlainConv, primary) · **Ours-L** (LightRes) · **Ours-R** (ResEnc).
 
 <p align="center">
   <img src="assets/fig01_architecture.png" alt="Fig 1" width="720" />
