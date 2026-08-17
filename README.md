@@ -33,7 +33,7 @@ Default **pool=P5 → stages=S6** (E0–E5); decoder with **AG** attention gates
   <img src="assets/fig01_architecture.png" alt="Fig 1" width="720" />
 </p>
 
-<p align="center"><sub><strong>Fig. 1</strong> SPARK-UNet architecture (preview). Full module labels ship with the released code and [README_EN.full.md](README_EN.full.md).</sub></p>
+<p align="center"><sub><strong>Fig. 1</strong> SPARK-UNet architecture (preview). </sub></p>
 
 ---
 
