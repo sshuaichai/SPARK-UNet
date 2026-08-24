@@ -2,8 +2,6 @@
 
 **Sparse Prior-guided Attention with Region-aware Key-token sampling** — 预算约束的锚点选择性多源上下文交互，用于三维医学图像分割。
 
-> 💡 **一句话：** 先验定 **读哪里**，Top-K 限 **读多少**，BA **写回** 跨源上下文 —— 未选中体素保持恒等。
-
 [English README](README_EN.md)
 
 ---
@@ -17,16 +15,6 @@
 ## 方法概览
 
 SPARK-UNet 在 nnU-Net 式 **稠密 U-Net** 主干上，用 **先验引导的 where-to-read** 与 **预算约束的 anchor write-back（BA）** 注入长程上下文，避免对全网格做全局自注意力；未选中位置保持 CNN 基底，仍支持稠密输出与滑窗推理。
-
-**SPARKUnit 流水线（E1–E4）：**
-
-| 步骤 | 模块 | 作用 |
-|:----:|:-----|:-----|
-| 1 | **Orient（E0）** | AxialDW3D 轴对齐局部编码 |
-| 2 | **Prior + TAN** | PriorHead → P_eff；在 **h** 上 Top-K → **base** |
-| 3 | **BA ∥ Win** | BA 在锚点写回 **base**（history / 全局 / partial，源维 \(S\) softmax）；WinMHSA3D 在 **h** 上门控并联相加 |
-
-默认 **pool=P5 → stages=S6**（E0–E5）；解码器含 **AG** 注意力门。变体：**Ours-P**（PlainConv，主报告）· **Ours-L**（LightRes）· **Ours-R**（ResEnc-L）。
 
 <p align="center">
   <img src="assets/fig01_architecture.png" alt="Fig 1" width="720" />
