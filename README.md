@@ -57,10 +57,13 @@ SPARK-UNet 在 nnU-Net 式 **稠密 U-Net** 主干上，用 **先验引导的 wh
 | 官方源（BTCV / Synapse） | [Synapse: syn3193805](https://www.synapse.org/Synapse:syn3193805/wiki/89480) |
 | TransUNet 划分预处理参考 | [Google Drive](https://drive.google.com/drive/folders/1ACJEoTp-uqfFJ73qS3eUObQh52nGuzCd) |
 
-### BraTS2023-GLI · `Dataset1251_BraTS2023GLI`
+### BraTS 2021 Adult Glioma · `Dataset1251_BraTS2021`
+
+论文与实验口径为 **BraTS 2021** 公开带标注训练队列（1251 例）。BraTS 2022/2023 Adult Glioma 为同一队列的再分发，**不等于** BraTS 2025 Lighthouse。下方网盘包若仍标注 `BraTS2023GLI`，内容对应同一 2021 队列的 nnU-Net 转换数据。
 
 | 类型 | 链接 |
 |:-----|:-----|
-| nnU-Net 格式（阿里云盘） | [Dataset1251_BraTS2023GLI](https://www.alipan.com/s/XsuCtxNFDaz) |
-| 官方源 | [Synapse: syn51156910](https://www.synapse.org/Synapse:syn51156910/wiki/622351) |
-| Kaggle 镜像 | [part-1](https://www.kaggle.com/datasets/aiocta/brats2023-part-1) · [part-2](https://www.kaggle.com/datasets/aiocta/brats2023-part-2zip) |
+| nnU-Net 格式（阿里云盘） | [Dataset1251_BraTS2021](https://www.alipan.com/s/XsuCtxNFDaz)（包内目录名可能仍为 `Dataset1251_BraTS2023GLI`） |
+| 官方源（BraTS 2021） | [Synapse: syn25829067](https://www.synapse.org/Synapse:syn25829067) |
+| 同队列再分发参考（2023 challenge 页） | [Synapse: syn51156910](https://www.synapse.org/Synapse:syn51156910/wiki/622351) |
+| Kaggle 镜像（同队列） | [part-1](https://www.kaggle.com/datasets/aiocta/brats2023-part-1) · [part-2](https://www.kaggle.com/datasets/aiocta/brats2023-part-2zip) |
