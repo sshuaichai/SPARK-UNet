@@ -64,7 +64,7 @@ Paper and experiments use the **BraTS 2021** publicly labeled training cohort (1
 
 | Type | Link |
 |:-----|:-----|
-| nnU-Net pack (Aliyun Drive) | [BraTS 2021](https://www.alipan.com/s/XsuCtxNFDaz) |
+| nnU-Net pack (Aliyun Drive) | [Dataset1251_BraTS2021GLI](https://www.alipan.com/s/M7cS2KvaAuK) |
 | Official source (BraTS 2021) | [Synapse: syn25829067](https://www.synapse.org/Synapse:syn25829067) |
 | Same-cohort redistribute page (2023 challenge) | [Synapse: syn51156910](https://www.synapse.org/Synapse:syn51156910/wiki/622351) |
 | Kaggle mirror (same cohort) | [part-1](https://www.kaggle.com/datasets/aiocta/brats2023-part-1) · [part-2](https://www.kaggle.com/datasets/aiocta/brats2023-part-2zip) |
