@@ -58,10 +58,13 @@ Cloud links below provide **converted nnU-Net raw folders** (`Dataset*`). Offici
 | Official source (BTCV / Synapse) | [Synapse: syn3193805](https://www.synapse.org/Synapse:syn3193805/wiki/89480) |
 | TransUNet-split preprocessed reference | [Google Drive](https://drive.google.com/drive/folders/1ACJEoTp-uqfFJ73qS3eUObQh52nGuzCd) |
 
-### BraTS2023-GLI · `Dataset1251_BraTS2023GLI`
+### BraTS 2021 Adult Glioma · `Dataset1251_BraTS2021`
+
+Paper and experiments use the **BraTS 2021** publicly labeled training cohort (1251 cases). BraTS 2022/2023 Adult Glioma redistributed the same cohort and are **not** BraTS 2025 Lighthouse. Cloud packs may still be labeled `BraTS2023GLI`; they correspond to the same 2021 cohort in nnU-Net format.
 
 | Type | Link |
 |:-----|:-----|
-| nnU-Net pack (Aliyun Drive) | [Dataset1251_BraTS2023GLI](https://www.alipan.com/s/XsuCtxNFDaz) |
-| Official source | [Synapse: syn51156910](https://www.synapse.org/Synapse:syn51156910/wiki/622351) |
-| Kaggle mirror | [part-1](https://www.kaggle.com/datasets/aiocta/brats2023-part-1) · [part-2](https://www.kaggle.com/datasets/aiocta/brats2023-part-2zip) |
+| nnU-Net pack (Aliyun Drive) | [Dataset1251_BraTS2021](https://www.alipan.com/s/XsuCtxNFDaz) (folder name may still be `Dataset1251_BraTS2023GLI`) |
+| Official source (BraTS 2021) | [Synapse: syn25829067](https://www.synapse.org/Synapse:syn25829067) |
+| Same-cohort redistribute page (2023 challenge) | [Synapse: syn51156910](https://www.synapse.org/Synapse:syn51156910/wiki/622351) |
+| Kaggle mirror (same cohort) | [part-1](https://www.kaggle.com/datasets/aiocta/brats2023-part-1) · [part-2](https://www.kaggle.com/datasets/aiocta/brats2023-part-2zip) |
