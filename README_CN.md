@@ -63,7 +63,7 @@ SPARK-UNet 在 nnU-Net 式 **稠密 U-Net** 主干上，用 **先验引导的 wh
 
 | 类型 | 链接 |
 |:-----|:-----|
-| nnU-Net 格式（阿里云盘） | [BraTS 2021](https://www.alipan.com/s/XsuCtxNFDaz) |
+| nnU-Net 格式（阿里云盘） | [Dataset1251_BraTS2021GLI](https://www.alipan.com/s/M7cS2KvaAuK) |
 | 官方源（BraTS 2021） | [Synapse: syn25829067](https://www.synapse.org/Synapse:syn25829067) |
 | 同队列再分发参考（2023 challenge 页） | [Synapse: syn51156910](https://www.synapse.org/Synapse:syn51156910/wiki/622351) |
 | Kaggle 镜像（同队列） | [part-1](https://www.kaggle.com/datasets/aiocta/brats2023-part-1) · [part-2](https://www.kaggle.com/datasets/aiocta/brats2023-part-2zip) |
