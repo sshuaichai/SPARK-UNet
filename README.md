@@ -17,12 +17,6 @@
 SPARK-UNet injects long-range context on an nnU-Net-style **dense U-Net** trunk via **prior-guided where-to-read** and **budgeted anchor write-back (BA)**, instead of global self-attention over the full grid. Unselected voxels keep the CNN base, preserving dense outputs and sliding-window inference.
 
 
-<p align="center">
-  <img src="assets/fig01_architecture.png" alt="Fig 1" width="720" />
-</p>
-
-<p align="center"><sub><strong>Fig. 1</strong> SPARK-UNet architecture.</sub></p>
-
 ---
 
 ## Citation
