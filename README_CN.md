@@ -16,12 +16,6 @@
 
 SPARK-UNet 在 nnU-Net 式 **稠密 U-Net** 主干上，用 **先验引导的 where-to-read** 与 **预算约束的 anchor write-back（BA）** 注入长程上下文，避免对全网格做全局自注意力；未选中位置保持 CNN 基底，仍支持稠密输出与滑窗推理。
 
-<p align="center">
-  <img src="assets/fig01_architecture.png" alt="Fig 1" width="720" />
-</p>
-
-<p align="center"><sub><strong>图 1</strong> SPARK-UNet 架构示意。</sub></p>
-
 ---
 
 ## 引用
