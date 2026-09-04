@@ -1,4 +1,4 @@
-# ✨ SPARK-UNet
+# ✨Spark-UNet
 
 **Sparse Prior-guided Attention with Region-aware Key-token sampling** — budgeted, anchor-selective multi-source contextual interaction for 3D medical image segmentation.
 
